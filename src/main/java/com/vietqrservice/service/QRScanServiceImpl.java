@@ -1,33 +1,45 @@
 package com.vietqrservice.service;
 
-import com.google.gson.Gson;
 import com.vietqrservice.entity.VietQR;
+import com.vietqrservice.repository.VietQRRepository;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.Collections;
+import java.util.List;
+
 @Service
+@Slf4j
 public class QRScanServiceImpl implements QRScanService {
-    Gson gson = new Gson();
+    @Autowired
+    private VietQRRepository vqrRepository;
 
     @Override
     public VietQR dataVietQR(String QRString) {
-        int totalLength = QRString.length();
-        VietQR vietQR = new VietQR();
-        String id = QRString.substring(0, 2);
-        String length = QRString.substring(2, 4);
-        int contentLength = Integer.parseInt(length);
-        while (totalLength > 0) {
-            String content = QRString.substring(id.length() + length.length(), id.length() + length.length() + contentLength);
-            String cutPart = id + length + content;
-            checkKey(id, contentLength, content, QRString, vietQR);
-            totalLength -= cutPart.length();
-            QRString = QRString.substring(cutPart.length());
-            if (totalLength >= 4) {
-                id = QRString.substring(0, 2);
-                length = QRString.substring(2, 4);
-                contentLength = Integer.parseInt(length);
+        try {
+            int totalLength = QRString.length();
+            VietQR vietQR = new VietQR();
+            String id = QRString.substring(0, 2);
+            String length = QRString.substring(2, 4);
+            int contentLength = Integer.parseInt(length);
+            while (totalLength > 0) {
+                String content = QRString.substring(id.length() + length.length(), id.length() + length.length() + contentLength);
+                String cutPart = id + length + content;
+                checkKey(id, contentLength, content, QRString, vietQR);
+                totalLength -= cutPart.length();
+                QRString = QRString.substring(cutPart.length());
+                if (totalLength >= 4) {
+                    id = QRString.substring(0, 2);
+                    length = QRString.substring(2, 4);
+                    contentLength = Integer.parseInt(length);
+                }
             }
+            return vietQR;
+        }catch (Exception e){
+            log.error(e.getMessage());
         }
-        return vietQR;
+        return null;
     }
 
     @Override
@@ -202,33 +214,56 @@ public class QRScanServiceImpl implements QRScanService {
 
     @Override
     public void handleCase38(String content, VietQR vietQR) {
-        int totalLength = content.length();
-        while (totalLength > 0) {
-            String id = content.substring(0, 2);
-            String length = content.substring(2, 4);
-            int subContentLength = Integer.parseInt(length);
-            String subContent = content.substring(4, 4 + subContentLength);
-            if(id.equals("00")) {
-                vietQR.setGuid(subContent);
-            } else if(id.equals("01")) {
-                while (subContent.length() > 0) {
-                    String subId = subContent.substring(0, 2);
-                    String subLength = subContent.substring(2, 4);
-                    int subLengthValue = Integer.parseInt(subLength);
-                    String subSubContent = subContent.substring(4, 4 + subLengthValue);
+        try {
+            int totalLength = content.length();
+            while (totalLength > 0) {
+                String id = content.substring(0, 2);
+                String length = content.substring(2, 4);
+                int subContentLength = Integer.parseInt(length);
+                String subContent = content.substring(4, 4 + subContentLength);
+                if (id.equals("00")) {
+                    vietQR.setGuid(subContent);
+                } else if (id.equals("01")) {
+                    while (subContent.length() > 0) {
+                        String subId = subContent.substring(0, 2);
+                        String subLength = subContent.substring(2, 4);
+                        int subLengthValue = Integer.parseInt(subLength);
+                        String subSubContent = subContent.substring(4, 4 + subLengthValue);
 
-                    if(subId.equals("00")) {
-                       vietQR.setAcquierIdBnbId(subSubContent);
-                    } else if(subId.equals("01")) {
-                        vietQR.setMerchantIdConsumerId(subSubContent);
+                        if (subId.equals("00")) {
+                            vietQR.setAcquierIdBnbId(subSubContent);
+                        } else if (subId.equals("01")) {
+                            vietQR.setMerchantIdConsumerId(subSubContent);
+                        }
+                        subContent = subContent.substring(4 + subLengthValue);
                     }
-                    subContent = subContent.substring(4 + subLengthValue);
+                } else if (id.equals("02")) {
+                    vietQR.setServiceId(subContent);
                 }
-            } else if(id.equals("02")) {
-                vietQR.setServiceId(subContent);
+                totalLength -= (4 + subContentLength);
+                content = content.substring(4 + subContentLength);
             }
-            totalLength -= (4 + subContentLength);
-            content = content.substring(4 + subContentLength);
+        } catch (Exception e) {
+            log.error(e.getMessage());
         }
+    }
+
+    @Override
+    public void save(VietQR vietQR) {
+        try {
+            this.vqrRepository.save(vietQR);
+        } catch (Exception e) {
+            log.error(e.getMessage());
+        }
+    }
+
+    @Override
+    public List<VietQR> getAllVietQRs() {
+        try {
+            return this.vqrRepository.findAll();
+        }catch (Exception e){
+            log.error(e.getMessage());
+        }
+        return Collections.emptyList();
     }
 }
