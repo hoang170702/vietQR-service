@@ -15,12 +15,6 @@ public class QRScanController {
     @Autowired
     private QRScanService qrScanService;
 
-    @GetMapping("/json")
-    public ResponseEntity<VietQR> dataJsonQR() {
-        String QRString = "0002010102111531397007040052044600006789177200238550010A000000727012500069704230111678917720020208QRIBFTTA5204513753037045802VN5405200005914NGUYEN HUU HOA6006Ha Noi630469A3";
-        return  ResponseEntity.status(HttpStatus.OK).body(this.qrScanService.dataVietQR(QRString));
-    }
-
     @PostMapping("/save-qrdata")
     public ResponseEntity<String> saveQRData(@RequestBody String QRString) {
         this.qrScanService.save(this.qrScanService.dataVietQR(QRString));
