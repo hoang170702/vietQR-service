@@ -15,6 +15,14 @@ public class AccountDTO implements Serializable {
     private String accountNo;
     private String accountName;
     private String amount;
-    private String addInfo;
+    private String purposeOfTransaction;
     private Country country;
+
+    public String getAmount() {
+        return amount != null ? amount : "";
+    }
+
+    public String getPurposeOfTransaction() {
+        return purposeOfTransaction != null ? purposeOfTransaction : "CHUYEN TIEN NHANH QUA QR";
+    }
 }
